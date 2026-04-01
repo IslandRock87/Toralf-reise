@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Havila Castor – Kirkenes til Bergen</title>
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Havila Castor">
+  <link rel="apple-touch-icon" href="icon.svg">
+
+  <!-- Theme / browser chrome -->
+  <meta name="theme-color" content="#003865">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="Havila Castor">
+  <meta name="description" content="Ruteplan for Havila Castor, 15.–21. april 2026 – Kirkenes til Bergen">
+  <style>
+    /* Safe area for iPhone notch/Dynamic Island */
+    :root {
+      --sat: env(safe-area-inset-top);
+      --sab: env(safe-area-inset-bottom);
+    }
+
+    /* Splash screen */
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: #003865;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #splash.hidden { opacity: 0; visibility: hidden; }
+    #splash .splash-icon { width: 110px; height: 110px; border-radius: 24px; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.35); }
+    #splash h2 { color: #c8a96e; font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
+    #splash p  { color: rgba(255,255,255,0.65); font-size: 0.85rem; margin-top: 6px; }
+    #splash .splash-dots { display: flex; gap: 8px; margin-top: 28px; }
+    #splash .splash-dots span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #00a3ad; opacity: 0.4;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    #splash .splash-dots span:nth-child(2) { animation-delay: 0.2s; }
+    #splash .splash-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.3); } }
+
+    :root {
+      --havila-blue: #003865;
+      --havila-teal: #00a3ad;
+      --havila-light: #e8f4f5;
+      --havila-gold: #c8a96e;
+      --text-dark: #1a2e3b;
+      --text-muted: #5a7080;
+      --bg: #f4f8fb;
+      --card: #ffffff;
+      --border: #d0e4ec;
+      --wine: #8b0000;
+      --wine-light: #fdf0f0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text-dark);
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--havila-blue) 0%, #005580 100%);
+      color: white;
+      padding: calc(20px + var(--sat)) 20px 16px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,56,101,0.3);
+      position: relative;
+    }
+
+    .lang-switcher {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .lang-btn {
+      background: rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 6px;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 9px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .lang-btn.active {
+      background: rgba(255,255,255,0.3);
+      border-color: var(--havila-gold);
+      color: var(--havila-gold);
+    }
+
+    .lang-btn:hover { background: rgba(255,255,255,0.25); }
+
+    header .ship-icon { font-size: 2rem; margin-bottom: 6px; }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    header .subtitle {
+      font-size: 0.88rem;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+
+    header .route-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--havila-gold);
+    }
+
+    header .route-arrow span { font-size: 1.2rem; }
+
+    .progress-bar-wrap {
+      background: var(--havila-blue);
+      padding: 10px 20px 14px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.72rem;
+      margin-bottom: 5px;
+    }
+
+    .progress-bar {
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--havila-teal), var(--havila-gold));
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .day-nav {
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+      padding: 12px 16px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      scrollbar-width: none;
+    }
+    .day-nav::-webkit-scrollbar { display: none; }
+
+    .day-btn {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: white;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .day-btn.active, .day-btn:hover {
+      background: var(--havila-blue);
+      border-color: var(--havila-blue);
+      color: white;
+    }
+
+    .day-btn.all-btn.active {
+      background: var(--havila-teal);
+      border-color: var(--havila-teal);
+    }
+
+    main { padding: 16px; max-width: 680px; margin: 0 auto; }
+
+    .day-section { margin-bottom: 24px; }
+
+    .day-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .day-badge {
+      background: var(--havila-blue);
+      color: white;
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .day-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .stops-list { display: flex; flex-direction: column; gap: 0; }
+
+    .stop-item {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      position: relative;
+    }
+
+    .timeline-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 36px;
+      flex-shrink: 0;
+    }
+
+    .timeline-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--havila-teal);
+      border: 2.5px solid white;
+      box-shadow: 0 0 0 2px var(--havila-teal);
+      flex-shrink: 0;
+      margin-top: 18px;
+      z-index: 1;
+    }
+
+    .stop-item.first .timeline-dot { background: var(--havila-blue); box-shadow: 0 0 0 2px var(--havila-blue); }
+    .stop-item.last .timeline-dot { background: var(--havila-gold); box-shadow: 0 0 0 2px var(--havila-gold); }
+
+    .timeline-line {
+      width: 2px;
+      flex: 1;
+      background: linear-gradient(to bottom, var(--havila-teal), var(--border));
+      min-height: 12px;
+    }
+
+    .stop-item:last-child .timeline-line { display: none; }
+
+    .stop-card {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: 4px 0 4px 8px;
+      transition: box-shadow 0.15s;
+    }
+
+    .stop-card:hover { box-shadow: 0 2px 10px rgba(0,56,101,0.1); }
+
+    .stop-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .stop-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .stop-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--havila-blue);
+    }
+
+    .vino-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--wine-light);
+      border: 1px solid #e8c0c0;
+      border-radius: 14px;
+      padding: 3px 9px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--wine);
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .vino-btn:hover {
+      background: #f8d7d7;
+      box-shadow: 0 1px 4px rgba(139,0,0,0.15);
+    }
+
+    .stop-times {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .time-pill {
+      display: inline-block;
+      background: var(--havila-light);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--havila-teal);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .time-pill.departure { background: #fff3e0; color: #e65100; margin-left: 4px; }
+
+    .time-labels {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      margin-top: 3px;
+    }
+
+    .time-label-text {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .stop-duration {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 5px;
+    }
+
+    .stop-duration span {
+      background: #f0f0f0;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.73rem;
+    }
+
+    .summary-card {
+      background: linear-gradient(135deg, var(--havila-blue), #005580);
+      border-radius: 12px;
+      color: white;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .summary-item .val { font-size: 1.5rem; font-weight: 700; color: var(--havila-gold); }
+    .summary-item .lbl { font-size: 0.75rem; opacity: 0.8; margin-top: 2px; }
+
+    .map-section {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,56,101,0.08);
+    }
+
+    .map-header {
+      background: var(--havila-blue);
+      color: white;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .map-header-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .map-header-sub {
+      font-size: 0.72rem;
+      opacity: 0.75;
+      margin-top: 2px;
+    }
+
+    .map-open-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--havila-teal);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 5px 11px;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .map-iframe {
+      width: 100%;
+      height: 420px;
+      border: none;
+      display: block;
+    }
+
+    .map-fallback {
+      background: var(--havila-light);
+      padding: 30px 20px;
+      text-align: center;
+      display: none;
+    }
+
+    .map-fallback p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px; }
+
+    .map-fallback a {
+      display: inline-block;
+      background: var(--havila-blue);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px 20px calc(20px + var(--sab));
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    @media (max-width: 400px) {
+      header h1 { font-size: 1.2rem; }
+      .stop-name { font-size: 0.9rem; }
+      .lang-btn { font-size: 0.68rem; padding: 3px 7px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Splash screen -->
+<div id="splash">
+  <img class="splash-icon" src="icon.svg" alt="Havila Castor">
+  <h2>Havila Castor</h2>
+  <p>Kirkenes → Bergen · April 2026</p>
+  <div class="splash-dots"><span></span><span></span><span></span></div>
+</div>
+
+<header>
+  <div class="lang-switcher">
+    <button class="lang-btn active" id="btn-no" onclick="setLang('no')">🇳🇴 NO</button>
+    <button class="lang-btn" id="btn-sr" onclick="setLang('sr')">🇷🇸 SR</button>
+  </div>
+  <div class="ship-icon">⚓</div>
+  <h1>Havila Voyages</h1>
+  <div class="subtitle" id="hdr-subtitle"></div>
+  <div class="route-arrow">
+    Kirkenes <span>⟶</span> Bergen
+  </div>
+</header>
+
+<div class="progress-bar-wrap">
+  <div class="progress-label">
+    <span>Kirkenes</span>
+    <span id="progressPct">0%</span>
+    <span>Bergen</span>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+</div>
+
+<div class="day-nav" id="dayNav"></div>
+
+<main>
+  <div class="summary-card">
+    <div class="summary-item"><div class="val">33</div><div class="lbl" id="lbl-ports"></div></div>
+    <div class="summary-item"><div class="val">7</div><div class="lbl" id="lbl-days"></div></div>
+    <div class="summary-item"><div class="val">~2800</div><div class="lbl" id="lbl-miles"></div></div>
+  </div>
+  <div id="schedule"></div>
+</main>
+
+<footer id="footer-text"></footer>
+
+<script>
+// ── Translations ──────────────────────────────────────────────
+const T = {
+  no: {
+    subtitle:    "Kystrutens perle – 15. april til 21. april 2026",
+    allDays:     "Alle dager",
+    dayShort:    "Dag",
+    aprShort:    "apr",
+    ports:       "Havner",
+    days:        "Dager",
+    miles:       "Nautiske mil",
+    arr:         "Ankomst",
+    dep:         "Avgang",
+    arrShort:    "Ank.",
+    depShort:    "Avg.",
+    stay:        "Liggetid",
+    vino:        "🍷 Vinmonopol",
+    noteNight:   "Ligger til kai over natten",
+    noteLand:    "Mulighet for landutflukt",
+    mapBtn:      "🗺️ Kart",
+    mapTitle:    "Havila Castor – Live posisjon",
+    mapSub:      "Sanntidsdata fra MarineTraffic",
+    mapOpen:     "↗ Åpne i MarineTraffic",
+    mapFallback: "Kartet kan ikke vises direkte. Åpne i MarineTraffic for å se skipets posisjon.",
+    footer:      "Havila Castor · Sørgående rute 2026",
+    dateOf:      (d, m) => `${d}. ${m} 2026`,
+    months:      ["januar","februar","mars","april","mai","juni","juli","august","september","oktober","november","desember"],
+  },
+  sr: {
+    subtitle:    "Бисер обалне руте – 15. априла до 21. априла 2026.",
+    allDays:     "Сви дани",
+    dayShort:    "Дан",
+    aprShort:    "апр",
+    ports:       "Луке",
+    days:        "Дана",
+    miles:       "Наутичких миља",
+    arr:         "Долазак",
+    dep:         "Одлазак",
+    arrShort:    "Дол.",
+    depShort:    "Одл.",
+    stay:        "Боравак",
+    vino:        "🍷 Винмонопол",
+    noteNight:   "Брод остаје преко ноћи",
+    noteLand:    "Могућност излета на копно",
+    mapBtn:      "🗺️ Карта",
+    mapTitle:    "Havila Castor – Позиција уживо",
+    mapSub:      "Подаци у реалном времену",
+    mapOpen:     "↗ Отвори у MarineTraffic",
+    mapFallback: "Карта не може да се прикаже директно. Отворите у MarineTraffic.",
+    footer:      "Havila Castor · Рута ка југу 2026.",
+    dateOf:      (d, m) => `${d}. ${m} 2026.`,
+    months:      ["јануара","фебруара","марта","априла","маја","јуна","јула","августа","септембра","октобра","новембра","децембра"],
+  }
+};
+
+// ── Schedule data ─────────────────────────────────────────────
+// city: used for Google Maps Vinmonopolet search
+const days = [
+  { day: 1, month: 4, date: 15, stops: [
+    { name: { no: "Kirkenes",   sr: "Kirkenes"   }, city: "Kirkenes",   arr: null,    dep: "09:00", first: true },
+    { name: { no: "Vardø",      sr: "Вардø"      }, city: "Vardø",      arr: "16:05", dep: "17:00" },
+    { name: { no: "Båtsfjord",  sr: "Botсфјорд"  }, city: "Båtsfjord",  arr: "20:00", dep: "20:30" },
+    { name: { no: "Berlevåg",   sr: "Берлевог"   }, city: "Berlevåg",   arr: "22:25", dep: "22:35" },
+  ]},
+  { day: 2, month: 4, date: 16, stops: [
+    { name: { no: "Mehamn",       sr: "Мехамн"       }, city: "Mehamn",       arr: "01:20", dep: "01:30" },
+    { name: { no: "Kjøllefjord",  sr: "Шелефјорд"    }, city: "Kjøllefjord",  arr: "03:25", dep: "03:35" },
+    { name: { no: "Honningsvåg",  sr: "Хонингсвог"   }, city: "Honningsvåg",  arr: "05:45", dep: "06:00" },
+    { name: { no: "Havøysund",    sr: "Хавøисун"     }, city: "Havøysund",    arr: "08:00", dep: "08:15" },
+    { name: { no: "Hammerfest",   sr: "Хамерфест"    }, city: "Hammerfest",   arr: "11:00", dep: "12:45" },
+    { name: { no: "Øksfjord",     sr: "Øксфјорд"     }, city: "Øksfjord",     arr: "15:50", dep: "16:05" },
+    { name: { no: "Skjervøy",     sr: "Шервøy"       }, city: "Skjervøy",     arr: "19:30", dep: "19:45" },
+    { name: { no: "Tromsø",       sr: "Тромсø"       }, city: "Tromsø",       arr: "23:45", dep: "→ natt" },
+  ]},
+  { day: 3, month: 4, date: 17, stops: [
+    { name: { no: "Tromsø (avgang)", sr: "Тромсø (одлазак)" }, city: "Tromsø",    arr: null,    dep: "01:30", noteKey: "noteNight" },
+    { name: { no: "Finnsnes",     sr: "Финснес"      }, city: "Finnsnes",     arr: "04:20", dep: "04:40" },
+    { name: { no: "Harstad",      sr: "Харстад"      }, city: "Harstad",      arr: "08:00", dep: "08:30" },
+    { name: { no: "Risøyhamn",    sr: "Рисøихамн"    }, city: "Risøyhamn",    arr: "10:45", dep: "11:00" },
+    { name: { no: "Sortland",     sr: "Сортланд"     }, city: "Sortland",     arr: "12:30", dep: "13:00" },
+    { name: { no: "Stokmarknes",  sr: "Стокмарknес"  }, city: "Stokmarknes",  arr: "14:15", dep: "15:15" },
+    { name: { no: "Svolvær",      sr: "Сволвер"      }, city: "Svolvær",      arr: "18:30", dep: "20:30" },
+    { name: { no: "Stamsund",     sr: "Стамсун"      }, city: "Stamsund",     arr: "22:15", dep: "22:30" },
+  ]},
+  { day: 4, month: 4, date: 18, stops: [
+    { name: { no: "Bodø",           sr: "Бодø"           }, city: "Bodø",           arr: "02:30", dep: "03:30" },
+    { name: { no: "Ørnes",          sr: "Øрнес"          }, city: "Ørnes",          arr: "06:25", dep: "06:35" },
+    { name: { no: "Nesna",          sr: "Несна"          }, city: "Nesna",          arr: "10:25", dep: "10:35" },
+    { name: { no: "Sandnessjøen",   sr: "Санднесшøен"    }, city: "Sandnessjøen",   arr: "11:45", dep: "12:15" },
+    { name: { no: "Brønnøysund",    sr: "Брøнøисун"      }, city: "Brønnøysund",    arr: "15:00", dep: "17:25" },
+    { name: { no: "Rørvik",         sr: "Рøрвик"         }, city: "Rørvik",         arr: "21:00", dep: "21:30" },
+  ]},
+  { day: 5, month: 4, date: 19, stops: [
+    { name: { no: "Trondheim", sr: "Тронхајм" }, city: "Trondheim", arr: "06:30", dep: "09:30", noteKey: "noteLand" },
+  ]},
+  { day: 6, month: 4, date: 20, stops: [
+    { name: { no: "Kristiansund",  sr: "Кристијансун"  }, city: "Kristiansund",  arr: "16:30", dep: "17:30" },
+    { name: { no: "Molde",         sr: "Молде"          }, city: "Molde",         arr: "21:15", dep: "21:45" },
+    { name: { no: "Ålesund",       sr: "Олесун"         }, city: "Ålesund",       arr: "00:30", dep: "→ natt" },
+  ]},
+  { day: 7, month: 4, date: 21, stops: [
+    { name: { no: "Ålesund (avgang)", sr: "Олесун (одлазак)" }, city: "Ålesund", arr: null,    dep: "01:20", noteKey: "noteNight" },
+    { name: { no: "Torvik",           sr: "Торвик"           }, city: "Torvik",   arr: "02:35", dep: "02:45" },
+    { name: { no: "Måløy",            sr: "Молøy"            }, city: "Måløy",    arr: "05:45", dep: "06:00" },
+    { name: { no: "Florø",            sr: "Флорø"            }, city: "Florø",    arr: "08:15", dep: "08:30" },
+    { name: { no: "Bergen",           sr: "Берген"           }, city: "Bergen",   arr: "14:45", dep: null, last: true },
+  ]},
+];
+
+// ── State ─────────────────────────────────────────────────────
+let currentLang = 'no';
+let currentFilter = 'all';
+
+// ── Helpers ───────────────────────────────────────────────────
+function t(key) { return T[currentLang][key]; }
+
+function vinoUrl(city) {
+  const q = encodeURIComponent('Vinmonopolet ' + city + ' Norge');
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+
+function calcStay(arr, dep) {
+  if (!arr || !dep || dep.includes('→')) return null;
+  const [ah, am] = arr.split(':').map(Number);
+  const [dh, dm] = dep.split(':').map(Number);
+  let mins = (dh * 60 + dm) - (ah * 60 + am);
+  if (mins <= 0) mins += 24 * 60;
+  if (mins >= 60) return Math.floor(mins / 60) + 't ' + (mins % 60 > 0 ? (mins % 60) + 'min' : '');
+  return mins + ' min';
+}
+
+// ── Render ────────────────────────────────────────────────────
+function renderNav() {
+  const nav = document.getElementById('dayNav');
+  const tr = T[currentLang];
+  const aprs = ['apr','apr','apr','apr','apr','apr','apr'];
+  const dates = [14,15,16,17,18,19,20];
+
+  nav.innerHTML = '';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'day-btn all-btn' + (currentFilter === 'all' ? ' active' : '');
+  allBtn.textContent = tr.allDays;
+  allBtn.onclick = () => filterDay('all');
+  nav.appendChild(allBtn);
+
+  days.forEach((d, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'day-btn' + (currentFilter === i ? ' active' : '');
+    btn.textContent = `${tr.dayShort} ${d.day} · ${d.date}. ${tr.aprShort}`;
+    btn.onclick = () => filterDay(i);
+    nav.appendChild(btn);
+  });
+
+  const mapBtn = document.createElement('button');
+  mapBtn.className = 'day-btn' + (currentFilter === 'map' ? ' active' : '');
+  mapBtn.style.borderColor = 'var(--havila-teal)';
+  mapBtn.style.color = currentFilter === 'map' ? 'white' : 'var(--havila-teal)';
+  if (currentFilter === 'map') mapBtn.style.background = 'var(--havila-teal)';
+  mapBtn.textContent = tr.mapBtn;
+  mapBtn.onclick = () => filterDay('map');
+  nav.appendChild(mapBtn);
+}
+
+function renderSchedule() {
+  const container = document.getElementById('schedule');
+  container.innerHTML = '';
+  const tr = T[currentLang];
+
+  if (currentFilter === 'map') {
+    const mtUrl = 'https://www.marinetraffic.com/en/ais/details/ships/shipid:6910535';
+    const embedUrl = 'https://www.marinetraffic.com/en/ais/embed/zoom:6/centery:66/centerx:15/maptype:4/shownames:true/mmsi:0/shipid:6910535/fleet:/fleet_id:/type:1/wtf:false';
+    container.innerHTML = `
+      <div class="map-section">
+        <div class="map-header">
+          <div>
+            <div class="map-header-title">${tr.mapTitle}</div>
+            <div class="map-header-sub">${tr.mapSub}</div>
+          </div>
+          <a class="map-open-btn" href="${mtUrl}" target="_blank" rel="noopener">${tr.mapOpen}</a>
+        </div>
+        <iframe class="map-iframe" id="mapIframe"
+          src="${embedUrl}"
+          allowfullscreen
+          loading="lazy"
+          title="MarineTraffic – Havila Castor">
+        </iframe>
+        <div class="map-fallback" id="mapFallback">
+          <p>${tr.mapFallback}</p>
+          <a href="${mtUrl}" target="_blank" rel="noopener">${tr.mapOpen}</a>
+        </div>
+      </div>
+    `;
+    // If iframe fails to load (blocked), show fallback
+    const iframe = document.getElementById('mapIframe');
+    iframe.onerror = () => {
+      iframe.style.display = 'none';
+      document.getElementById('mapFallback').style.display = 'block';
+    };
+    setTimeout(() => {
+      if (iframe.contentDocument && iframe.contentDocument.body &&
+          iframe.contentDocument.body.innerHTML === '') {
+        iframe.style.display = 'none';
+        document.getElementById('mapFallback').style.display = 'block';
+      }
+    }, 5000);
+    return;
+  }
+
+  const toRender = currentFilter === 'all' ? days : [days[currentFilter]];
+
+  toRender.forEach(day => {
+    const sec = document.createElement('div');
+    sec.className = 'day-section';
+
+    const monthName = tr.months[day.month - 1];
+    const dateStr = tr.dateOf(day.date, monthName);
+
+    const hdr = document.createElement('div');
+    hdr.className = 'day-header';
+    hdr.innerHTML = `
+      <div class="day-badge">${tr.dayShort} ${day.day}</div>
+      <div class="day-label">${dateStr}</div>
+    `;
+    sec.appendChild(hdr);
+
+    const list = document.createElement('div');
+    list.className = 'stops-list';
+
+    day.stops.forEach(stop => {
+      const isFirst = stop.first || false;
+      const isLast  = stop.last  || false;
+      const stay    = calcStay(stop.arr, stop.dep);
+      const stopName = stop.name[currentLang] || stop.name.no;
+      const noteText = stop.noteKey ? tr[stop.noteKey] : null;
+
+      const item = document.createElement('div');
+      item.className = 'stop-item' + (isFirst ? ' first' : '') + (isLast ? ' last' : '');
+
+      let timesHtml = '';
+      if (isFirst) {
+        timesHtml = `
+          <div class="time-pill departure">${stop.dep}</div>
+          <div class="time-labels"><div class="time-label-text" style="width:60px">${tr.dep}</div></div>
+        `;
+      } else if (isLast) {
+        timesHtml = `
+          <div class="time-pill">${stop.arr}</div>
+          <div class="time-labels"><div class="time-label-text" style="width:60px">${tr.arr}</div></div>
+        `;
+      } else {
+        timesHtml = `
+          <div>
+            ${stop.arr ? `<span class="time-pill">${stop.arr}</span>` : ''}
+            ${stop.dep && !stop.dep.includes('→') ? `<span class="time-pill departure">${stop.dep}</span>` : ''}
+          </div>
+          <div class="time-labels">
+            ${stop.arr ? `<span class="time-label-text" style="width:48px">${tr.arrShort}</span>` : ''}
+            ${stop.dep && !stop.dep.includes('→') ? `<span class="time-label-text" style="width:48px">${tr.depShort}</span>` : ''}
+          </div>
+        `;
+      }
+
+      item.innerHTML = `
+        <div class="timeline-col">
+          <div class="timeline-dot"></div>
+          <div class="timeline-line"></div>
+        </div>
+        <div class="stop-card">
+          <div class="stop-top">
+            <div class="stop-name-wrap">
+              <div class="stop-name">${stopName}</div>
+              <a class="vino-btn" href="${vinoUrl(stop.city)}" target="_blank" rel="noopener" title="${tr.vino}">${tr.vino}</a>
+            </div>
+            <div class="stop-times">${timesHtml}</div>
+          </div>
+          ${stay ? `<div class="stop-duration">${tr.stay}: <span>${stay}</span></div>` : ''}
+          ${noteText ? `<div class="stop-duration" style="color:#005580;margin-top:4px">ℹ️ ${noteText}</div>` : ''}
+        </div>
+      `;
+      list.appendChild(item);
+    });
+
+    sec.appendChild(list);
+    container.appendChild(sec);
+  });
+}
+
+function renderStatic() {
+  const tr = T[currentLang];
+  document.getElementById('hdr-subtitle').textContent = tr.subtitle;
+  document.getElementById('lbl-ports').textContent  = tr.ports;
+  document.getElementById('lbl-days').textContent   = tr.days;
+  document.getElementById('lbl-miles').textContent  = tr.miles;
+  document.getElementById('footer-text').textContent = tr.footer;
+  document.documentElement.lang = currentLang;
+}
+
+function render() {
+  renderStatic();
+  renderNav();
+  renderSchedule();
+}
+
+// ── Actions ───────────────────────────────────────────────────
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('btn-no').classList.toggle('active', lang === 'no');
+  document.getElementById('btn-sr').classList.toggle('active', lang === 'sr');
+  render();
+}
+
+function filterDay(idx) {
+  currentFilter = idx;
+  render();
+}
+
+function updateProgress() {
+  const start = new Date('2026-04-15T09:00:00');
+  const end   = new Date('2026-04-21T14:45:00');
+  const now   = new Date();
+  let pct = 0;
+  if (now >= start && now <= end) pct = Math.round(((now - start) / (end - start)) * 100);
+  else if (now > end) pct = 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent  = pct + '%';
+}
+
+// ── Init ──────────────────────────────────────────────────────
+render();
+updateProgress();
+
+// ── Splash screen ─────────────────────────────────────────────
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (splash) splash.classList.add('hidden');
+  }, 1200);
+});
+
+// ── Service Worker ────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(() => {}); // silently fail if not hosted
+  });
+}
+</script>
+</body>
+</html>
