@@ -324,6 +324,29 @@
       flex-shrink: 0;
     }
 
+    .hotel-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #f0f4ff;
+      border: 1px solid #c0ceee;
+      border-radius: 14px;
+      padding: 3px 9px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #1a3a7a;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .hotel-btn:hover {
+      background: #dce6ff;
+      box-shadow: 0 1px 4px rgba(26,58,122,0.18);
+    }
+
     .vino-btn:hover {
       background: #f8d7d7;
       box-shadow: 0 1px 4px rgba(139,0,0,0.15);
@@ -477,7 +500,18 @@
 
 <!-- Splash screen -->
 <div id="splash">
-  <img class="splash-icon" src="icon.svg" alt="Havila Castor">
+  <svg class="splash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#003865"/>
+  <path d="M60 400 Q130 375 200 400 Q270 425 340 400 Q410 375 452 395 L452 470 Q410 450 340 470 Q270 490 200 470 Q130 450 60 470 Z" fill="#00a3ad" opacity="0.5"/>
+  <path d="M60 430 Q130 408 200 430 Q270 452 340 430 Q410 408 452 425 L452 512 L60 512 Z" fill="#00a3ad" opacity="0.35"/>
+  <circle cx="256" cy="128" r="48" fill="none" stroke="#c8a96e" stroke-width="30"/>
+  <circle cx="256" cy="80" r="18" fill="#c8a96e"/>
+  <rect x="241" y="172" width="30" height="210" rx="15" fill="#c8a96e"/>
+  <rect x="120" y="192" width="272" height="28" rx="14" fill="#c8a96e"/>
+  <path d="M241 378 Q160 378 140 320 Q130 296 152 286 Q174 276 186 300 Q196 340 241 345 Z" fill="#c8a96e"/>
+  <path d="M271 378 Q352 378 372 320 Q382 296 360 286 Q338 276 326 300 Q316 340 271 345 Z" fill="#c8a96e"/>
+  <circle cx="256" cy="378" r="20" fill="#c8a96e"/>
+</svg>
   <h2>Havila Castor</h2>
   <p>Kirkenes → Bergen · April 2026</p>
   <div class="splash-dots"><span></span><span></span><span></span></div>
@@ -579,7 +613,12 @@ const T = {
 // city: used for Google Maps Vinmonopolet search
 const days = [
   { day: 1, month: 4, date: 15, stops: [
-    { name: { no: "Kirkenes",   sr: "Kirkenes"   }, city: "Kirkenes",   arr: null,    dep: "09:00", first: true },
+    { name: { no: "Kirkenes",   sr: "Kirkenes"   }, city: "Kirkenes",   arr: null,    dep: "09:00", first: true,
+      hotels: [
+        { name: "Thon Hotel Kirkenes", url: "https://www.google.com/maps/search/?api=1&query=Thon+Hotel+Kirkenes" },
+        { name: "Barents Hotel",       url: "https://www.google.com/maps/search/?api=1&query=Barents+Hotel+Kirkenes" }
+      ]
+    },
     { name: { no: "Vardø",      sr: "Вардø"      }, city: "Vardø",      arr: "16:05", dep: "17:00" },
     { name: { no: "Båtsfjord",  sr: "Botсфјорд"  }, city: "Båtsfjord",  arr: "20:00", dep: "20:30" },
     { name: { no: "Berlevåg",   sr: "Берлевог"   }, city: "Berlevåg",   arr: "22:25", dep: "22:35" },
@@ -797,6 +836,9 @@ function renderSchedule() {
           </div>
           ${stay ? `<div class="stop-duration">${tr.stay}: <span>${stay}</span></div>` : ''}
           ${noteText ? `<div class="stop-duration" style="color:#005580;margin-top:4px">ℹ️ ${noteText}</div>` : ''}
+          ${stop.hotels ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+            ${stop.hotels.map(h => `<a class="hotel-btn" href="${h.url}" target="_blank" rel="noopener">🏨 ${h.name}</a>`).join('')}
+          </div>` : ''}
         </div>
       `;
       list.appendChild(item);
@@ -847,17 +889,19 @@ function updateProgress() {
   document.getElementById('progressPct').textContent  = pct + '%';
 }
 
-// ── Init ──────────────────────────────────────────────────────
-render();
-updateProgress();
-
 // ── Splash screen ─────────────────────────────────────────────
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const splash = document.getElementById('splash');
-    if (splash) splash.classList.add('hidden');
-  }, 1200);
-});
+function hideSplash() {
+  const splash = document.getElementById('splash');
+  if (splash) splash.classList.add('hidden');
+}
+// Alltid skjul etter 1.5s uansett – fungerer lokalt og på nett
+setTimeout(hideSplash, 1500);
+window.addEventListener('load', () => setTimeout(hideSplash, 800));
+document.addEventListener('DOMContentLoaded', () => setTimeout(hideSplash, 800));
+
+// ── Init ──────────────────────────────────────────────────────
+try { render(); } catch(e) { console.error('render feil:', e); hideSplash(); }
+try { updateProgress(); } catch(e) { console.error('progress feil:', e); }
 
 // ── Service Worker ────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
